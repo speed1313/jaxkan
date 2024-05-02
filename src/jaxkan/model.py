@@ -1,6 +1,5 @@
 import jax
 import jax.numpy as jnp
-from chex import assert_trees_all_close
 from functools import partial
 
 # l層目のi番目のneuronを(l,i)で示し, (l,i)-neuronのactivation valueをx_{l,i}とする

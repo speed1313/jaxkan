@@ -8,11 +8,11 @@ dataset = create_dataset(f, n_var=4)
 dataset['train_input'].shape, dataset['train_label'].shape
 
 # plot KAN at initialization
-model(dataset['train_input']);
+model(dataset['train_input'])
 model.plot(beta=100)
 
 # train the model
-model.train(dataset, opt="Adam", steps=200, lamb=0.01, lamb_entropy=10.);
+model.train(dataset, opt="Adam", steps=200, lamb=0.01, lamb_entropy=10.)
 
 model.plot()
 

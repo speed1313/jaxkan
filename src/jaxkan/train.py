@@ -1,6 +1,5 @@
 import jax
 import jax.numpy as jnp
-from chex import assert_trees_all_close
 from jaxkan.model import model
 
 dataset_size = 100
@@ -8,8 +7,8 @@ input_dim = 2
 
 @jax.jit
 def f(x):
-    return x[0] * 2 + x[1] * 3
-    #return jnp.exp(jnp.sin(jnp.pi*x[0]) + x[1]**2)
+    #return x[0] * 2 + x[1] * 3
+    return jnp.exp(jnp.sin(jnp.pi*x[0]) + x[1]**2)
     #return jnp.exp(jnp.sin(x[0]**2 + x[1]**2) + jnp.sin(x[2]**2 + x[3]**2))
 X = jax.random.uniform(jax.random.PRNGKey(0), shape=(dataset_size, input_dim), dtype=jnp.float32, minval=-1.0, maxval=1.0)
 # normalize
