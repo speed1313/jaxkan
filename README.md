@@ -1,6 +1,5 @@
 # jaxkan
-JAX implementation of Kolmogorov Arnold Networks.
-
+JAX implementation of Kolmogorov Arnold Networks (KANs). The original implementation of KANs is [here](https://github.com/KindXiaoming/pykan).
 
 ## How to use
 
