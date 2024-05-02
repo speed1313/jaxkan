@@ -44,7 +44,7 @@ def test_train_parametrized_kan_layer():
 @partial(jax.jit, static_argnums=(3, 4, 5, 6))
 def psi(x, t, coef, coef_idx, coef_length, k, basis_fn=jax.nn.silu):
     spline = bspline(x, t, coef[coef_idx:coef_idx+coef_length-1], k)
-    return coef[coef_idx+coef_length ] *(basis_fn(x) + spline)
+    return coef[coef_idx+coef_length-1] *(basis_fn(x) + spline)
 
 
 
