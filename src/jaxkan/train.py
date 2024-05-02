@@ -1,6 +1,7 @@
 import jax
 import jax.numpy as jnp
 from jaxkan.model import model
+import matplotlib.pyplot as plt
 
 dataset_size = 100
 input_dim = 2
@@ -24,7 +25,7 @@ X = jax.random.uniform(
 Y = jnp.array([f(x) for x in X])
 
 basis_fn = jax.nn.silu
-width_list = [2, 4, 1]
+width_list = [2, 5, 1]
 num_grid_interval = 5
 grid_size = 5
 spline_order = 3
@@ -54,13 +55,21 @@ def batched_loss_fn(coef, X, Y):
     return jnp.mean(jax.vmap(lambda x, y: loss_fn(coef, x, y))(X, Y))
 
 
-for i in range(1000):
+
+loss_history = []
+for i in range(2000):
     val, grad = jax.value_and_grad(batched_loss_fn)(coef, X, Y)
     coef = coef - 0.1 * grad
     if i % 100 == 0:
         print(f"(step {i}) loss: {val}")
+        loss_history.append(val)
 
 
-print("loss:", batched_loss_fn(coef, X, Y))
-for x, y in zip(X, Y):
-    print("x:", x, "y:", y, "predict:", model(coef, x, basis_fn, width_list, t, k))
+plt.plot([i for i in range(0, 2000, 100)], loss_history)
+# log scale
+plt.yscale("log")
+plt.xlabel("step")
+plt.ylabel("loss")
+plt.xticks([i for i in range(0, 2000, 500)])
+plt.savefig("loss.png")
+plt.show()
