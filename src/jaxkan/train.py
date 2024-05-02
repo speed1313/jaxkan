@@ -24,9 +24,13 @@ X = jax.random.uniform(
 Y = jnp.array([f(x) for x in X])
 
 basis_fn = jax.nn.silu
-width_list = [2, 1, 1]
-num_grid_interval = 3
-t = jnp.linspace(-1, 1, num_grid_interval + 1)
+width_list = [2, 4, 1]
+num_grid_interval = 5
+grid_size = 5
+spline_order = 3
+grid_range = [-1, 1]
+h = (grid_range[1] - grid_range[0]) / grid_size
+t = jnp.arange(-spline_order, grid_size + spline_order + 1) * h + grid_range[0]
 k = 3
 coef_length = len(t) - k - 1 + 1
 param_size = sum(
@@ -53,7 +57,7 @@ def batched_loss_fn(coef, X, Y):
 for i in range(1000):
     val, grad = jax.value_and_grad(batched_loss_fn)(coef, X, Y)
     coef = coef - 0.1 * grad
-    if i % 10 == 0:
+    if i % 100 == 0:
         print(f"(step {i}) loss: {val}")
 
 

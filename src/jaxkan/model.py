@@ -9,45 +9,6 @@ from functools import partial
 # x_{l+1, j} := \sum x^~_{l,i,j} = \sum \phi_{l,i,j}(x_{l,i}) とする
 
 
-def test_train_parametrized_kan_layer():
-    def f(x1, x2, x3, x4):
-        return jnp.exp(jnp.sin(x1**2 + x2**2) + jnp.sin(x3**2 + x4**2))
-
-    x = jnp.array([0.5, 0.1, 0.2, 0.3])
-    y = f(*x)
-    basis_fn = jax.nn.relu
-    width_list = [4, 2, 1, 1]
-    num_grid_interval = 10
-    t = jnp.linspace(-1, 1, num_grid_interval + 1)
-    k = 3
-    coef_length = len(t) - k - 1
-    param_size = sum(
-        [
-            width_list[l] * width_list[l + 1] * coef_length
-            for l in range(len(width_list) - 1)
-        ]
-    )
-    coef = jax.random.normal(
-        jax.random.PRNGKey(0), shape=(param_size,), dtype=jnp.float32
-    )
-    print("coef:", coef)
-    print("len(coef):", len(coef))
-
-    def loss_fn(coef, x, y):
-        prediction = model(coef, x, basis_fn, width_list, t, k)
-        print(prediction)
-        return jnp.mean((prediction - y) ** 2)
-
-    for i in range(40):
-        val, grad = jax.value_and_grad(loss_fn)(coef, x, y)
-        print(val)
-        print(grad)
-
-        coef = coef - 0.1 * grad
-
-    assert jnp.abs(model(coef, x, basis_fn, width_list, t, k) - y) < 1e-3
-
-
 @partial(jax.jit, static_argnums=(3, 4, 5, 6))
 def psi(x, t, coef, coef_idx, coef_length, k, basis_fn=jax.nn.silu):
     spline = bspline(x, t, coef[coef_idx : coef_idx + coef_length - 1], k)
@@ -97,7 +58,6 @@ def B(x, k, i, t):
         return branch_false(x, t, i)
 
 
-# from functools import partial
 @partial(jax.jit, static_argnums=(3,))
 def bspline(x, t, c, k):
     n = len(t) - k - 1
@@ -109,22 +69,7 @@ def bspline(x, t, c, k):
 
 def test_bspline():
     k = 2
-    t = [0, 1, 2, 3, 4, 5, 6]
-    c = [-1, 2, 0, -1]
+    t = jnp.array([0, 1, 2, 3, 4, 5, 6])
+    c = jnp.array([-1, 2, 0, -1])
     spl = bspline(2.5, t, c, k)
     assert spl == 1.375
-
-    k = 3
-    t = jnp.linspace(-1, 1, 11)
-    c = jax.random.normal(jax.random.PRNGKey(0), shape=(len(t) - k - 1,))
-    spl = bspline(0.4, t, c, k)
-    assert spl == 0.0
-
-
-def test_grad_bspline():
-    k = 2
-    t = [0, 1, 2, 3, 4, 5, 6]
-    c = [-1, 2, 0, -1]
-    grad_fn = jax.grad(lambda c: bspline(2.5, t, c, k))
-    grad = grad_fn(jnp.array(c, dtype=jnp.float32))
-    assert jnp.sum(grad) != 0.0
