@@ -47,7 +47,7 @@ coef = (
 
 def loss_fn(coef, x, y):
     predict = model(coef, x, basis_fn, width_list, t, k)
-    return jnp.mean((predict - y) ** 2)
+    return (predict - y) ** 2
 
 
 def batched_loss_fn(coef, X, Y):
