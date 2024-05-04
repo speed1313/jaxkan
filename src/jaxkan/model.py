@@ -9,7 +9,7 @@ from functools import partial
 # x_{l+1, j} := \sum x^~_{l,i,j} = \sum \phi_{l,i,j}(x_{l,i}) とする
 
 
-@partial(jax.jit, static_argnums=(3, 4, 5, 6))
+#@partial(jax.jit, static_argnums=(4, 5,6))
 def psi(x, t, coef, coef_idx, coef_length, k, basis_fn=jax.nn.silu):
     coef_slice = jax.lax.dynamic_slice(coef, (coef_idx,), (coef_length-1,))
     #assert coef_slice.shape == (coef_length-1,)

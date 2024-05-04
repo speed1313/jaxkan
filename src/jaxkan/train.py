@@ -60,7 +60,7 @@ loss_history = []
 for i in range(2000):
     val, grad = jax.value_and_grad(batched_loss_fn)(coef, X, Y)
     coef = coef - 0.1 * grad
-    if i % 10 == 0:
+    if i % 100 == 0:
         print(f"(step {i}) loss: {val}")
         loss_history.append(val)
 
