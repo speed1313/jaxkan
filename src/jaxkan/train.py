@@ -26,13 +26,11 @@ Y = jnp.array([f(x) for x in X])
 
 basis_fn = jax.nn.silu
 width_list = [2, 5, 1]
-num_grid_interval = 5
-grid_size = 5
-spline_order = 3
-grid_range = [-1, 1]
-h = (grid_range[1] - grid_range[0]) / grid_size
-t = jnp.arange(-spline_order, grid_size + spline_order + 1) * h + grid_range[0]
+grid_size = 20
 k = 3
+grid_range = [-1, 1]
+t = jnp.arange(grid_range[0], grid_range[1], 1/grid_size)
+
 coef_length = len(t) - k - 1 + 1
 param_size = sum(
     [

@@ -23,21 +23,23 @@ def model(coef, x, basis_fn, width_list, t, k):
     post_activation = x
     current_idx = 0
     for l in range(len(width_list) - 1):
-        def psi_matrix(i, j, l, current_idx):
-            # j to i
+
+        def psi_matrix(j, i, width_list, l, current_idx):
+            # i to j
             return psi(
-                post_activation[j], t, coef, current_idx + (j*(l+1) + i) * coef_length, coef_length, k, basis_fn
+                post_activation[i], t, coef, current_idx + (i*(width_list[l+1]) + j) * coef_length, coef_length, k, basis_fn
             )
 
-        def row(j, l, current_idx):
-            return jax.vmap(partial(psi_matrix, j=j, l = l, current_idx = current_idx))(jnp.arange(width_list[l + 1]))
+        def row(i, width_list, l, current_idx):
+            return jax.vmap(partial(psi_matrix, i=i, width_list=width_list, l = l, current_idx = current_idx))(jnp.arange(width_list[l + 1]))
 
         def get_P(width_list, l, current_idx):
-            return jax.vmap(partial(row, l=l, current_idx=current_idx))(jnp.arange(width_list[l]))
+            return jax.vmap(partial(row, width_list=width_list, l=l, current_idx=current_idx))(jnp.arange(width_list[l]))
         P = get_P(width_list, l, current_idx)
 
-        #assert P.shape == (width_list[l], width_list[l + 1])
+        assert P.shape == (width_list[l], width_list[l + 1])
         post_activation = jnp.sum(P, axis=0)
+        assert post_activation.shape == (width_list[l + 1],)
         current_idx += width_list[l] * width_list[l + 1] * coef_length
         #assert post_activation.shape == (width_list[l + 1],)
     return post_activation
