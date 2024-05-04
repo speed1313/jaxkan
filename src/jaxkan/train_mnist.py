@@ -9,12 +9,12 @@ class_num = 10
 sample_per_class = 1000
 input_dim = 28 * 28
 batch_size = 64
-epoch_num = 5
+epoch_num = 10
 lr = 0.003
 
 
 basis_fn = jax.nn.silu
-width_list = [input_dim, 10, 10, class_num]
+width_list = [input_dim, 64, class_num]
 grid_size = 5  # fine-grainedness of grid. more accurate when larger
 k = 3  # order of spline
 grid_range = [-1, 1]
