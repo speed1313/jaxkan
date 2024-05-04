@@ -9,34 +9,22 @@ from functools import partial
 # x_{l+1, j} := \sum x^~_{l,i,j} = \sum \phi_{l,i,j}(x_{l,i}) とする
 
 
-#@partial(jax.jit, static_argnums=(4, 5,6))
+@partial(jax.jit, static_argnums=(4, 5, 6))
 def psi(x, t, coef, coef_idx, coef_length, k, basis_fn=jax.nn.silu):
-    coef_slice = jax.lax.dynamic_slice(coef, (coef_idx,), (coef_length-1,))
-    #assert coef_slice.shape == (coef_length-1,)
+    coef_slice = jax.lax.dynamic_slice(coef, (coef_idx,), (coef_length-2,))
     spline = bspline(x, t, coef_slice, k)
-    return coef[coef_idx + coef_length - 1] * (basis_fn(x) + spline)
+    scale_base = coef[coef_idx + coef_length - 2]
+    scale_spline = coef[coef_idx + coef_length - 1]
+    return scale_base * basis_fn(x) + scale_spline * spline
 
 
 
 def model(coef, x, basis_fn, width_list, t, k):
-    coef_length = len(t) - k - 1 + 1
+    coef_length = len(t) - k - 1 + 2
     post_activation = x
     current_idx = 0
     for l in range(len(width_list) - 1):
-
-        def psi_matrix(j, i, width_list, l, current_idx):
-            # i to j
-            return psi(
-                post_activation[i], t, coef, current_idx + (i*(width_list[l+1]) + j) * coef_length, coef_length, k, basis_fn
-            )
-
-        def row(i, width_list, l, current_idx):
-            return jax.vmap(partial(psi_matrix, i=i, width_list=width_list, l = l, current_idx = current_idx))(jnp.arange(width_list[l + 1]))
-
-        def get_P(width_list, l, current_idx):
-            return jax.vmap(partial(row, width_list=width_list, l=l, current_idx=current_idx))(jnp.arange(width_list[l]))
-        P = get_P(width_list, l, current_idx)
-
+        P = jax.vmap(lambda i: jax.vmap(lambda j: psi(post_activation[i], t, coef, current_idx + i * width_list[l + 1] * coef_length + j * coef_length, coef_length, k, basis_fn))(jnp.arange(width_list[l+1])))(jnp.arange(width_list[l]))
         assert P.shape == (width_list[l], width_list[l + 1])
         post_activation = jnp.sum(P, axis=0)
         assert post_activation.shape == (width_list[l + 1],)

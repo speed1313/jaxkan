@@ -31,7 +31,7 @@ k = 3
 grid_range = [-1, 1]
 t = jnp.arange(grid_range[0], grid_range[1], 1/grid_size)
 
-coef_length = len(t) - k - 1 + 1
+coef_length = len(t) - k - 1 + 2
 param_size = sum(
     [
         width_list[l] * width_list[l + 1] * coef_length
