@@ -9,7 +9,7 @@ The original implementation of KANs in PyTorch is [here](https://github.com/Kind
 
 # How to use
 
-## Train MNIST with KANs
+## Training KANs on MNIST dataset
 
 ```bash
 $ rye run python3 src/jaxkan/train_mnist.py
