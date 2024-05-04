@@ -29,7 +29,7 @@ width_list = [2, 5, 1]
 grid_size = 20
 k = 3
 grid_range = [-1, 1]
-t = jnp.arange(grid_range[0], grid_range[1], 1/grid_size)
+t = jnp.arange(grid_range[0], grid_range[1], 1 / grid_size)
 
 coef_length = len(t) - k - 1 + 2
 param_size = sum(
@@ -51,7 +51,6 @@ def loss_fn(coef, x, y):
 
 def batched_loss_fn(coef, X, Y):
     return jnp.mean(jax.vmap(lambda x, y: loss_fn(coef, x, y))(X, Y))
-
 
 
 loss_history = []

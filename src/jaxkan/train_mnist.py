@@ -15,10 +15,10 @@ lr = 0.003
 
 basis_fn = jax.nn.silu
 width_list = [input_dim, 10, 10, class_num]
-grid_size = 5 # fine-grainedness of grid. more accurate when larger
-k = 3 # order of spline
+grid_size = 5  # fine-grainedness of grid. more accurate when larger
+k = 3  # order of spline
 grid_range = [-1, 1]
-t = jnp.arange(grid_range[0], grid_range[1], 1/grid_size)
+t = jnp.arange(grid_range[0], grid_range[1], 1 / grid_size)
 coef_length = len(t) - k - 1 + 2
 param_size = sum(
     [
@@ -39,12 +39,15 @@ print("data loaded")
 solver = optax.adam(learning_rate=lr)
 opt_state = solver.init(coef)
 
+
 def loss_fn(coef, X, Y):
-    logits = jax.vmap(lambda x: jax.nn.log_softmax(model(coef, x, basis_fn, width_list, t, k)))(X)
+    logits = jax.vmap(
+        lambda x: jax.nn.log_softmax(model(coef, x, basis_fn, width_list, t, k))
+    )(X)
     one_hots = jax.nn.one_hot(Y, class_num)
     one_hots = jnp.reshape(one_hots, (len(Y), class_num))
 
-    loss = jnp.mean(optax.softmax_cross_entropy(logits = logits, labels = one_hots))
+    loss = jnp.mean(optax.softmax_cross_entropy(logits=logits, labels=one_hots))
     return loss, logits
 
 
@@ -63,16 +66,31 @@ for epoch in range(epoch_num):
     for perm in perms:
         batch_images = train_ds["image"][perm, ...].reshape((batch_size, input_dim))
         batch_labels = train_ds["label"][perm, ...].reshape((batch_size, 1))
-        (loss, logits), grad = jax.value_and_grad(loss_fn, has_aux=True)(coef, batch_images, batch_labels)
+        (loss, logits), grad = jax.value_and_grad(loss_fn, has_aux=True)(
+            coef, batch_images, batch_labels
+        )
         updates, opt_state = solver.update(grad, opt_state, coef)
         coef = optax.apply_updates(coef, updates)
         loss_history.append(loss)
-    train_accuracy = jnp.mean(jax.vmap(lambda x, y: jnp.argmax(model(coef, x, basis_fn, width_list, t, k)) == y)(train_ds["image"].reshape((-1, input_dim)), train_ds["label"].reshape((-1, 1))))
-    test_accuracy = jnp.mean(jax.vmap(lambda x, y: jnp.argmax(model(coef, x, basis_fn, width_list, t, k)) == y)(test_ds["image"].reshape((-1, input_dim)), test_ds["label"].reshape((-1, 1))))
+    train_accuracy = jnp.mean(
+        jax.vmap(
+            lambda x, y: jnp.argmax(model(coef, x, basis_fn, width_list, t, k)) == y
+        )(
+            train_ds["image"].reshape((-1, input_dim)),
+            train_ds["label"].reshape((-1, 1)),
+        )
+    )
+    test_accuracy = jnp.mean(
+        jax.vmap(
+            lambda x, y: jnp.argmax(model(coef, x, basis_fn, width_list, t, k)) == y
+        )(test_ds["image"].reshape((-1, input_dim)), test_ds["label"].reshape((-1, 1)))
+    )
     train_accuracy_history.append(train_accuracy)
     test_accuracy_history.append(test_accuracy)
 
-    print(f"epoch {epoch} loss: {loss:.3f} train_accuracy: {train_accuracy:.3f} test_accuracy: {test_accuracy:.3f}")
+    print(
+        f"epoch {epoch} loss: {loss:.3f} train_accuracy: {train_accuracy:.3f} test_accuracy: {test_accuracy:.3f}"
+    )
 
 
 plt.plot(loss_history)
@@ -89,4 +107,3 @@ plt.xlabel("epoch")
 plt.ylabel("accuracy")
 plt.legend()
 plt.savefig("mnist_accuracy.png")
-

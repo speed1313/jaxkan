@@ -11,12 +11,11 @@ from functools import partial
 
 @partial(jax.jit, static_argnums=(4, 5, 6))
 def psi(x, t, coef, coef_idx, coef_length, k, basis_fn=jax.nn.silu):
-    coef_slice = jax.lax.dynamic_slice(coef, (coef_idx,), (coef_length-2,))
+    coef_slice = jax.lax.dynamic_slice(coef, (coef_idx,), (coef_length - 2,))
     spline = bspline(x, t, coef_slice, k)
     scale_base = coef[coef_idx + coef_length - 2]
     scale_spline = coef[coef_idx + coef_length - 1]
     return scale_base * basis_fn(x) + scale_spline * spline
-
 
 
 def model(coef, x, basis_fn, width_list, t, k):
@@ -24,12 +23,24 @@ def model(coef, x, basis_fn, width_list, t, k):
     post_activation = x
     current_idx = 0
     for l in range(len(width_list) - 1):
-        P = jax.vmap(lambda i: jax.vmap(lambda j: psi(post_activation[i], t, coef, current_idx + i * width_list[l + 1] * coef_length + j * coef_length, coef_length, k, basis_fn))(jnp.arange(width_list[l+1])))(jnp.arange(width_list[l]))
+        P = jax.vmap(
+            lambda i: jax.vmap(
+                lambda j: psi(
+                    post_activation[i],
+                    t,
+                    coef,
+                    current_idx + i * width_list[l + 1] * coef_length + j * coef_length,
+                    coef_length,
+                    k,
+                    basis_fn,
+                )
+            )(jnp.arange(width_list[l + 1]))
+        )(jnp.arange(width_list[l]))
         assert P.shape == (width_list[l], width_list[l + 1])
         post_activation = jnp.sum(P, axis=0)
         assert post_activation.shape == (width_list[l + 1],)
         current_idx += width_list[l] * width_list[l + 1] * coef_length
-        #assert post_activation.shape == (width_list[l + 1],)
+        # assert post_activation.shape == (width_list[l + 1],)
     return post_activation
 
 

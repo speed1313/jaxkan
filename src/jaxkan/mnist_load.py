@@ -1,11 +1,10 @@
-import jax
-import jax.numpy as jnp
 import numpy as np
 import torchvision
-import matplotlib.pyplot as plt
+
 
 def mnist_transform(x):
     return np.expand_dims(np.array(x, dtype=np.float32), axis=2) / 255.0
+
 
 def get_dataset_torch(class_num, sample_per_class):
     mnist = {
