@@ -3,14 +3,17 @@ import jax.numpy as jnp
 from jaxkan.model import model
 import matplotlib.pyplot as plt
 
-dataset_size = 100
-input_dim = 2
+dataset_size = 10
+input_dim = 27 * 27
 
 
 @jax.jit
 def f(x):
     # return x[0] * 2 + x[1] * 3
-    return jnp.exp(jnp.sin(jnp.pi * x[0]) + x[1] ** 2)
+    W = jax.random.normal(jax.random.PRNGKey(0), shape=(input_dim, 2))
+    return jax.nn.softmax(jnp.dot(x, W))
+
+    # return jnp.exp(jnp.sin(jnp.pi * x[0]) + x[1] ** 2)
     # return jnp.exp(jnp.sin(x[0]**2 + x[1]**2) + jnp.sin(x[2]**2 + x[3]**2))
 
 
@@ -24,8 +27,10 @@ X = jax.random.uniform(
 # normalize
 Y = jnp.array([f(x) for x in X])
 
+print("data generated")
+
 basis_fn = jax.nn.silu
-width_list = [2, 5, 1]
+width_list = [27*27, 5, 2]
 num_grid_interval = 5
 grid_size = 5
 spline_order = 3
@@ -55,12 +60,12 @@ def batched_loss_fn(coef, X, Y):
     return jnp.mean(jax.vmap(lambda x, y: loss_fn(coef, x, y))(X, Y))
 
 
-
 loss_history = []
 for i in range(2000):
+    print(f"step {i}")
     val, grad = jax.value_and_grad(batched_loss_fn)(coef, X, Y)
     coef = coef - 0.1 * grad
-    if i % 10 == 0:
+    if i % 1 == 0:
         print(f"(step {i}) loss: {val}")
         loss_history.append(val)
 

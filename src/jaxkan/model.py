@@ -11,24 +11,35 @@ from functools import partial
 
 @partial(jax.jit, static_argnums=(3, 4, 5, 6))
 def psi(x, t, coef, coef_idx, coef_length, k, basis_fn=jax.nn.silu):
-    spline = bspline(x, t, coef[coef_idx : coef_idx + coef_length - 1], k)
+    coef_slice = jax.lax.dynamic_slice(coef, (coef_idx,), (coef_length-1,))
+    #assert coef_slice.shape == (coef_length-1,)
+    spline = bspline(x, t, coef_slice, k)
     return coef[coef_idx + coef_length - 1] * (basis_fn(x) + spline)
+
 
 
 def model(coef, x, basis_fn, width_list, t, k):
     coef_length = len(t) - k - 1 + 1
-    coef_idx = 0
     post_activation = x
+    current_idx = 0
     for l in range(len(width_list) - 1):
-        post_l_j = jnp.zeros(width_list[l + 1])
-        for i in range(width_list[l]):
-            for j in range(width_list[l + 1]):
-                phi_l_i_j = psi(
-                    post_activation[i], t, coef, coef_idx, coef_length, k, basis_fn
-                )
-                post_l_j = post_l_j.at[j].add(phi_l_i_j)
-                coef_idx += coef_length
-        post_activation = post_l_j
+        def psi_matrix(i, j, l, current_idx):
+            # j to i
+            return psi(
+                post_activation[j], t, coef, current_idx + (j*(l+1) + i) * coef_length, coef_length, k, basis_fn
+            )
+
+        def row(j, l, current_idx):
+            return jax.vmap(partial(psi_matrix, j=j, l = l, current_idx = current_idx))(jnp.arange(width_list[l + 1]))
+
+        def get_P(width_list, l, current_idx):
+            return jax.vmap(partial(row, l=l, current_idx=current_idx))(jnp.arange(width_list[l]))
+        P = get_P(width_list, l, current_idx)
+
+        #assert P.shape == (width_list[l], width_list[l + 1])
+        post_activation = jnp.sum(P, axis=0)
+        current_idx += width_list[l] * width_list[l + 1] * coef_length
+        #assert post_activation.shape == (width_list[l + 1],)
     return post_activation
 
 
