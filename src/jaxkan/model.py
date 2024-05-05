@@ -2,11 +2,10 @@ import jax
 import jax.numpy as jnp
 from functools import partial
 
-# l層目のi番目のneuronを(l,i)で示し, (l,i)-neuronのactivation valueをx_{l,i}とする
-# lとl+1の間にはn_l * n_{l+1}個のactivation functionがある.
-# (l,j) to (l+1,i) の activation functionを\phi_{l,i,j}とする
-# \phi_{l,i,j}の入力はx{l,i}であるから, post-activation valueをx^~_{l,i,j}:=\phi_{l,i,j}(x_{l,i})とする
-# x_{l+1, j} := \sum x^~_{l,i,j} = \sum \phi_{l,i,j}(x_{l,i}) とする
+# KAN model calculation:
+# for each layer l
+#   \psi(x_i) := scale_base * basis_fn(x_i) + scale_spline * spline(x_i)
+#   x_{l+1,j} := \sum \psi(x_{l,i})
 
 
 @partial(jax.jit, static_argnums=(4, 5, 6))
