@@ -9,46 +9,57 @@ from functools import partial
 
 
 @partial(jax.jit, static_argnums=(4, 5, 6))
-def psi(x, t, coef, coef_idx, coef_length, k, basis_fn=jax.nn.silu):
-    # coef_idx is the first index, (coef_length-2) is the length of the slice we want to take
-    coef_slice = jax.lax.dynamic_slice(coef, (coef_idx,), (coef_length - 2,))
-    spline = bspline(x, t, coef_slice, k)
-    scale_base = coef[coef_idx + coef_length - 2]
-    scale_spline = coef[coef_idx + coef_length - 1]
+def psi(
+    x: jnp.float32,
+    t: jax.Array,
+    params: jax.Array,
+    params_idx: int,
+    psi_param_length: int,
+    k: int,
+    basis_fn=jax.nn.silu,
+) -> jnp.float32:
+    # params_idx is the first index, (psi_param_length-2) is the length of the slice we want to take
+    params_slice = jax.lax.dynamic_slice(params, (params_idx,), (psi_param_length - 2,))
+    spline = bspline(x, t, params_slice, k)
+    scale_base = params[params_idx + psi_param_length - 2]
+    scale_spline = params[params_idx + psi_param_length - 1]
     return scale_base * basis_fn(x) + scale_spline * spline
 
 
-def model(coef, x, basis_fn, width_list, t, k):
-    coef_length = len(t) - k - 1 + 2
-    post_activation = x
+def model(
+    params: jax.Array, x: jax.Array, basis_fn, width_list: list, t: jax.Array, k: int
+) -> jax.Array:
+    psi_param_length = len(t) - k - 1 + 2
     current_idx = 0
     for l in range(len(width_list) - 1):
         P = jax.vmap(
             lambda i: jax.vmap(
                 lambda j: psi(
-                    post_activation[i],
+                    x[i],
                     t,
-                    coef,
-                    current_idx + i * width_list[l + 1] * coef_length + j * coef_length,
-                    coef_length,
+                    params,
+                    current_idx
+                    + i * width_list[l + 1] * psi_param_length
+                    + j * psi_param_length,
+                    psi_param_length,
                     k,
                     basis_fn,
                 )
             )(jnp.arange(width_list[l + 1]))
         )(jnp.arange(width_list[l]))
         assert P.shape == (width_list[l], width_list[l + 1])
-        post_activation = jnp.sum(P, axis=0)
-        assert post_activation.shape == (width_list[l + 1],)
-        current_idx += width_list[l] * width_list[l + 1] * coef_length
+        x = jnp.sum(P, axis=0)
+        assert x.shape == (width_list[l + 1],)
+        current_idx += width_list[l] * width_list[l + 1] * psi_param_length
         # assert post_activation.shape == (width_list[l + 1],)
-    return post_activation
+    return x
 
 
 # refer to https://github.com/scipy/scipy/blob/v1.13.0/scipy/interpolate/_bsplines.py#L150
 
 
 @partial(jax.jit, static_argnums=(1,))
-def B(x, k, i, t):
+def B(x: jnp.float32, k: int, i: int, t: jax.Array) -> jnp.float32:
     # t corresponds to grid in the pykan implementation(maybe)
     def branch_true(x, t, i):
         return jnp.where((t[i] <= x) & (x < t[i + 1]), 1.0, 0.0)
@@ -71,7 +82,7 @@ def B(x, k, i, t):
 
 
 @partial(jax.jit, static_argnums=(3,))
-def bspline(x, t, c, k):
+def bspline(x: jnp.float32, t: jax.Array, c: jax.Array, k: int) -> jnp.float32:
     n = len(t) - k - 1
     # assert (n >= k+1) and (len(c) >= n)
     B_list = [B(x, k, i, t) for i in range(n)]
