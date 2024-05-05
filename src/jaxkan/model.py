@@ -11,6 +11,7 @@ from functools import partial
 
 @partial(jax.jit, static_argnums=(4, 5, 6))
 def psi(x, t, coef, coef_idx, coef_length, k, basis_fn=jax.nn.silu):
+    # coef_idx is the first index, (coef_length-2) is the length of the slice we want to take
     coef_slice = jax.lax.dynamic_slice(coef, (coef_idx,), (coef_length - 2,))
     spline = bspline(x, t, coef_slice, k)
     scale_base = coef[coef_idx + coef_length - 2]
