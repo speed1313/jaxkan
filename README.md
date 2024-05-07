@@ -4,6 +4,7 @@ The original implementation of KANs in PyTorch is [here](https://github.com/Kind
 
 # TODO
 - [x] Support for Adam optimizer
+- [x] Support for fourier basis spline
 - [ ] Support for update grid size
 - [x] more efficient implementation
 
