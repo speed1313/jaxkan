@@ -8,6 +8,7 @@ from functools import partial
 #   x_{l+1,j} := \sum \psi(x_{l,i})
 
 
+# 1d b-spline interpolation
 @partial(jax.jit, static_argnums=(4, 5, 6))
 def psi(
     x: jnp.float32,
@@ -26,15 +27,49 @@ def psi(
     return scale_base * basis_fn(x) + scale_spline * spline
 
 
+# 1d fourier interpolation
+@partial(jax.jit, static_argnums=(4, 5, 6))
+def psi_fourier(
+    x: jnp.float32,
+    t: jax.Array,
+    params: jax.Array,
+    params_idx: int,
+    psi_param_length: int,
+    k: int,
+    basis_fn=jax.nn.silu,
+) -> jnp.float32:
+    params_slice = jax.lax.dynamic_slice(params, (params_idx,), (psi_param_length - 2,))
+    spline = 0
+    for i in range(len(params_slice)):
+        if i % 2 == 0:
+            spline += jnp.cos((i // 2) * x * jnp.pi) * params_slice[i]
+        else:
+            spline += jnp.sin((i // 2) * x * jnp.pi) * params_slice[i]
+
+    scale_base = params[params_idx + psi_param_length - 2]
+    scale_spline = params[params_idx + psi_param_length - 1]
+    return scale_base * basis_fn(x) + scale_spline * spline
+
+
+spline_fn_dict = {"bspline": psi, "fourier": psi_fourier}
+
+
 def model(
-    params: jax.Array, x: jax.Array, basis_fn, width_list: list, t: jax.Array, k: int
+    params: jax.Array,
+    x: jax.Array,
+    basis_fn,
+    width_list: list,
+    t: jax.Array,
+    k: int,
+    spline_fb_name: str = "bspline",
 ) -> jax.Array:
     psi_param_length = len(t) - k - 1 + 2
     current_idx = 0
+    spline_fn = spline_fn_dict[spline_fb_name]
     for l in range(len(width_list) - 1):
         P = jax.vmap(
             lambda i: jax.vmap(
-                lambda j: psi(
+                lambda j: spline_fn(
                     x[i],
                     t,
                     params,

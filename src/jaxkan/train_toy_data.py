@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 
 dataset_size = 100
 input_dim = 2
+spline_fn_name = "fourier"
 
 
 @jax.jit
@@ -45,7 +46,7 @@ coef = (
 
 
 def loss_fn(coef, x, y):
-    predict = model(coef, x, basis_fn, width_list, t, k)
+    predict = model(coef, x, basis_fn, width_list, t, k, spline_fn_name)
     return (predict - y) ** 2
 
 
@@ -68,5 +69,5 @@ plt.yscale("log")
 plt.xlabel("step")
 plt.ylabel("loss")
 plt.xticks([i for i in range(0, 2000, 500)])
-plt.savefig("loss.png")
+plt.savefig(f"loss_toy_model_{spline_fn_name}.png")
 plt.show()

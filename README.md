@@ -15,9 +15,14 @@ The original implementation of KANs in PyTorch is [here](https://github.com/Kind
 $ rye run python3 src/jaxkan/train_mnist.py
 ```
 ## Loss dynamics
-![loss](./mnist_loss.png)
+![loss](figures/mnist_loss_bspline.png)
 ## Accuracy dynamics
-![accuracy](./mnist_accuracy.png)
+![accuracy](figures/mnist_accuracy_bspline.png)
+
+## Loss dynamics with fourier basis
+![loss](figures/mnist_loss_fourier.png)
+## Accuracy dynamics with fourier basis
+![accuracy](figures/mnist_accuracy_fourier.png)
 
 # References
 - [KAN: Kolmogorov-Arnold Networks](https://arxiv.org/abs/2404.19756)

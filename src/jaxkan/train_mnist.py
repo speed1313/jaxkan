@@ -11,7 +11,7 @@ input_dim = 28 * 28
 batch_size = 64
 epoch_num = 10
 lr = 0.003
-
+spline_fn_name = "fourier"
 
 basis_fn = jax.nn.silu
 width_list = [input_dim, 64, class_num]
@@ -44,7 +44,9 @@ opt_state = solver.init(params)
 
 def loss_fn(params, X, Y):
     logits = jax.vmap(
-        lambda x: jax.nn.log_softmax(model(params, x, basis_fn, width_list, t, k))
+        lambda x: jax.nn.log_softmax(
+            model(params, x, basis_fn, width_list, t, k, spline_fn_name)
+        )
     )(X)
     one_hots = jax.nn.one_hot(Y, class_num)
     one_hots = jnp.reshape(one_hots, (len(Y), class_num))
@@ -59,6 +61,7 @@ steps_per_epoch = train_ds_size // batch_size
 loss_history = []
 train_accuracy_history = []
 test_accuracy_history = []
+
 
 keys = jax.random.split(jax.random.PRNGKey(0), epoch_num)
 for epoch in range(epoch_num):
@@ -76,7 +79,10 @@ for epoch in range(epoch_num):
         loss_history.append(loss)
     train_accuracy = jnp.mean(
         jax.vmap(
-            lambda x, y: jnp.argmax(model(params, x, basis_fn, width_list, t, k)) == y
+            lambda x, y: jnp.argmax(
+                model(params, x, basis_fn, width_list, t, k, spline_fn_name)
+            )
+            == y
         )(
             train_ds["image"].reshape((-1, input_dim)),
             train_ds["label"].reshape((-1, 1)),
@@ -84,7 +90,10 @@ for epoch in range(epoch_num):
     )
     test_accuracy = jnp.mean(
         jax.vmap(
-            lambda x, y: jnp.argmax(model(params, x, basis_fn, width_list, t, k)) == y
+            lambda x, y: jnp.argmax(
+                model(params, x, basis_fn, width_list, t, k, spline_fn_name)
+            )
+            == y
         )(test_ds["image"].reshape((-1, input_dim)), test_ds["label"].reshape((-1, 1)))
     )
     train_accuracy_history.append(train_accuracy)
@@ -99,7 +108,7 @@ plt.plot(loss_history)
 plt.yscale("log")
 plt.xlabel("step")
 plt.ylabel("loss")
-plt.savefig("mnist_loss.png")
+plt.savefig(f"mnist_loss_{spline_fn_name}.png")
 
 
 plt.figure()
@@ -108,4 +117,4 @@ plt.plot(test_accuracy_history, label="test")
 plt.xlabel("epoch")
 plt.ylabel("accuracy")
 plt.legend()
-plt.savefig("mnist_accuracy.png")
+plt.savefig(f"mnist_accuracy_{spline_fn_name}.png")
